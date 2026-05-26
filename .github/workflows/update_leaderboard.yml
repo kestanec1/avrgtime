@@ -6,6 +6,9 @@ on:
     - cron: '*/35 * * * *'
   workflow_dispatch: # İstediğinde Actions sekmesinden elle de başlatabilmen için
 
+env:
+  TZ: "America/Toronto"
+
 permissions:
   contents: write
 
