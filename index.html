@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCSR Ranked - Live Average Leaderboard</title>
-    <meta http-equiv="refresh" content="20">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -437,11 +436,11 @@
                     <a href="https://mcsrranked.com/stats/BeefSalad" target="_blank" class="player-link">BeefSalad</a>
                 </td>
                 <td data-val="569"><span class="time-badge">9:29</span></td>
-                <td class="stats-count" data-val="319">319</td>
+                <td class="stats-count" data-val="320">320</td>
                 <td class="stats-count" data-val="56">
                     56 <span class="forfeit-text">(9.4%)</span>
                 </td>
-                <td class="elo-text" data-val="2012">2012</td>
+                <td class="elo-text" data-val="2028">2028</td>
                 <td class="points-text" data-val="0">0</td>
             </tr>
         
@@ -1407,7 +1406,7 @@
                 <td class="stats-count" data-val="0">
                     0 <span class="forfeit-text">(0.0%)</span>
                 </td>
-                <td class="elo-text" data-val="1890">1890</td>
+                <td class="elo-text" data-val="1874">1874</td>
                 <td class="points-text" data-val="0">0</td>
             </tr>
         
@@ -1624,14 +1623,15 @@
         </tbody>
     </table>
     
-    <div class="footer">
-        Last Updated: 2026-05-26 19:48:18 | Developed by kestaneci
+    <div class="footer" id="lastUpdatedFooter">
+        Last Updated: 2026-05-26 19:56:20 | Developed by kestaneci
     </div>
 </div>
 
 <script>
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    let filter = this.value.toLowerCase();
+// Arama motoru fonksiyonu
+function applySearchFilter() {
+    let filter = document.getElementById('searchInput').value.toLowerCase();
     let rows = document.querySelectorAll('#leaderboardTable tbody tr');
     
     rows.forEach(row => {
@@ -1642,7 +1642,9 @@ document.getElementById('searchInput').addEventListener('keyup', function() {
             row.style.display = 'none';
         }
     });
-});
+}
+
+document.getElementById('searchInput').addEventListener('keyup', applySearchFilter);
 
 let sortDirections = [true, true, true, true, true, true, true]; 
 
@@ -1691,6 +1693,30 @@ function resetTable() {
         tbody.appendChild(row);
     });
 }
+
+// AKILLI CANLI GÜNCELLEME (ARKA PLAN AJAX)
+// 20 saniyede bir sayfayı yenilemeden verileri ve saati sessizce tazeleyen kısım
+setInterval(function() {
+    fetch(window.location.href, { cache: 'no-store' })
+    .then(response => response.text())
+    .then(html => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        
+        // Sadece tablonun gövdesini (tbody) ve saati güncelle
+        let newTbody = doc.querySelector('#leaderboardTable tbody');
+        let newFooter = doc.querySelector('#lastUpdatedFooter');
+        
+        if(newTbody && newFooter) {
+            document.querySelector('#leaderboardTable tbody').innerHTML = newTbody.innerHTML;
+            document.querySelector('#lastUpdatedFooter').innerHTML = newFooter.innerHTML;
+            
+            // Güncelleme yapıldıktan sonra eğer kullanıcı arama kutusuna bir şey yazdıysa filtreyi koru
+            applySearchFilter();
+        }
+    })
+    .catch(err => console.log('Arka plan verisi çekilemedi:', err));
+}, 20000);
 </script>
 
 </body>
