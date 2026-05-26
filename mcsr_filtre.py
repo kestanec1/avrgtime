@@ -5,7 +5,7 @@ import webbrowser
 import os
 from datetime import datetime
 # --- RENDER UYUMASIN DIYE GEREKLI KUTUPHANELER ---
-from flask import Flask
+from flask import Flask, send_from_directory
 from threading import Thread
 
 # Settings
@@ -18,12 +18,15 @@ HEADERS = {
     "Accept": "application/json"
 }
 
-# --- RENDER UYUMASIN DIYE SNEAKY WEB SERVER ---
+# --- RENDER UYUMASIN VE SITE DISARIYA AÇILSIN ---
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot Canli!"
+    # 'Bot Canli!' yazısı yerine üretilen index.html dosyasını dış dünyaya açıyoruz
+    if os.path.exists(FILE_HTML):
+        return send_from_directory('.', FILE_HTML)
+    return "Bot Canli! (Henüz index.html uretilmedi, 1-2 dakika bekleyin)"
 
 def run():
     # Render varsayılan olarak 8080 portunu dinler
@@ -259,7 +262,7 @@ def generate_html_site(valid_players):
             font-weight: bold;
         }}
         .points-text {{
-            color: #ffb74d; /* Warm orange/gold highlight for playoff points */
+            color: #ffb74d;
             font-family: monospace;
             font-size: 14px;
             font-weight: bold;
@@ -331,7 +334,6 @@ def generate_html_site(valid_players):
 </div>
 
 <script>
-// 1. Instant Search Feature
 document.getElementById('searchInput').addEventListener('keyup', function() {{
     let filter = this.value.toLowerCase();
     let rows = document.querySelectorAll('#leaderboardTable tbody tr');
@@ -346,7 +348,6 @@ document.getElementById('searchInput').addEventListener('keyup', function() {{
     }});
 }});
 
-// 2. Dynamic Table Sorting Feature (For colIndex 2, 3, 4, 5 and 6)
 let sortDirections = [true, true, true, true, true, true, true]; 
 
 function sortTable(colIndex, isNumeric) {{
@@ -374,7 +375,6 @@ function sortTable(colIndex, isNumeric) {{
     rows.forEach(row => tbody.appendChild(row));
 }}
 
-// 3. Reset Button Feature
 function resetTable() {{
     document.getElementById('searchInput').value = '';
     
@@ -405,10 +405,9 @@ function resetTable() {{
         f.write(html_template)
 
 def main():
-    # --- WEB SERVERI WHLE TRUE DONGUSUNDEN ONCE TETIKLIYORUZ ---
+    # --- WEB SERVERI TETIKLIYORUZ ---
     keep_alive()
 
-    # Burası artık sonsuz döngüde kalarak Render'da 7/24 çalışacak
     while True:
         if download_live_leaderboard_names():
             PLAYERS = read_players_from_input_txt()
@@ -472,7 +471,6 @@ def main():
                 generate_html_site(valid_players)
                 print(f"\n[EXCELLENT] Dashboard successfully updated! Last: {datetime.now().strftime('%H:%M:%S')}")
         
-        # Her tur bittikten sonra 5 dakika (300 saniye) mola verip baştan başlayacak
         print("Waiting 5 minutes for the next update cycle...")
         time.sleep(300)
 
