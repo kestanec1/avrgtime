@@ -1,7 +1,6 @@
 import requests
 import time
 import re
-import webbrowser
 import os
 from datetime import datetime
 
@@ -241,7 +240,7 @@ def generate_html_site(valid_players):
             font-weight: bold;
         }}
         .points-text {{
-            color: #ffb74d; /* Warm orange/gold highlight for playoff points */
+            color: #ffb74d;
             font-family: monospace;
             font-size: 14px;
             font-weight: bold;
@@ -313,7 +312,6 @@ def generate_html_site(valid_players):
 </div>
 
 <script>
-// 1. Instant Search Feature
 document.getElementById('searchInput').addEventListener('keyup', function() {{
     let filter = this.value.toLowerCase();
     let rows = document.querySelectorAll('#leaderboardTable tbody tr');
@@ -328,7 +326,6 @@ document.getElementById('searchInput').addEventListener('keyup', function() {{
     }});
 }});
 
-// 2. Dynamic Table Sorting Feature (For colIndex 2, 3, 4, 5 and 6)
 let sortDirections = [true, true, true, true, true, true, true]; 
 
 function sortTable(colIndex, isNumeric) {{
@@ -356,7 +353,6 @@ function sortTable(colIndex, isNumeric) {{
     rows.forEach(row => tbody.appendChild(row));
 }}
 
-// 3. Reset Button Feature
 function resetTable() {{
     document.getElementById('searchInput').value = '';
     
@@ -387,96 +383,69 @@ function resetTable() {{
         f.write(html_template)
 
 def main():
-    print("--- Host Modu Aktif: Sunucu Arka Planda Çalışıyor ---")
-    while True: # Host için sonsuz döngü başlangıcı
+    if not download_live_leaderboard_names():
+        print("Liderlik tablosu indirilemedi.")
+        return
+        
+    PLAYERS = read_players_from_input_txt()
+    if not PLAYERS:
+        print("Oyuncu listesi boş veya okunamadı.")
+        return
+        
+    print(f"STEP 2: Calculating statistics for {len(PLAYERS)} players...")
+    valid_players = []
+    total_players = len(PLAYERS)
+    
+    for index, username in enumerate(PLAYERS, 1):
+        print(f"[{index}/{total_players}] Querying {username}...")
+        url = f"https://api.mcsrranked.com/users/{username}"
+        
         try:
-            if not download_live_leaderboard_names():
-                print("Liderlik tablosu indirilemedi, 60 saniye sonra tekrar denenecek...")
-                time.sleep(60)
-                continue
+            response = requests.get(url, headers=HEADERS, timeout=5)
+            if response.status_code == 200:
+                user_json = response.json()
+                user_data = user_json.get("data", {})
                 
-            PLAYERS = read_players_from_input_txt()
-            if not PLAYERS:
-                print("Oyuncu listesi boş veya okunamadı, 60 saniye sonra tekrar denenecek...")
-                time.sleep(60)
-                continue
+                elo = user_data.get("eloRate", 0) or 0
+                points = user_data.get("points", 0) or 0
                 
-            print(f"STEP 2: Calculating statistics for {len(PLAYERS)} players...")
-            valid_players = []
-            total_players = len(PLAYERS)
+                statistics = user_data.get("statistics", {})
+                season_data = statistics.get("season", {})
+                
+                completions = season_data.get("completions", {}).get("ranked", 0)
+                completion_time_ms = season_data.get("completionTime", {}).get("ranked", 0)
+                
+                wins = season_data.get("wins", {}).get("ranked", 0)
+                forfeits = season_data.get("forfeits", {}).get("ranked", 0)
+                played_matches = season_data.get("playedMatches", {}).get("ranked", 0)
+                
+                forfeit_rate = (forfeits / played_matches * 100) if played_matches > 0 else 0.0
+                
+                if completions > 0 and completion_time_ms > 0:
+                    avg_seconds = round((completion_time_ms / completions) / 1000)
+                    minutes = avg_seconds // 60
+                    seconds = avg_seconds % 60
+                    time_str = f"{minutes}:{seconds:02d}"
+                    
+                    valid_players.append({
+                        "name": username,
+                        "avg_seconds": avg_seconds,
+                        "time_str": time_str,
+                        "wins": wins,
+                        "forfeits": forfeits,
+                        "forfeit_rate": forfeit_rate,
+                        "elo": elo,
+                        "points": points
+                    })
             
-            for index, username in enumerate(PLAYERS, 1):
-                print(f"[{index}/{total_players}] Querying {username}...")
-                url = f"https://api.mcsrranked.com/users/{username}"
-                
-                try:
-                    response = requests.get(url, headers=HEADERS, timeout=5)
-                    if response.status_code == 200:
-                        user_json = response.json()
-                        user_data = user_json.get("data", {})
-                        
-                        # Fetching ELO and play-off points
-                        elo = user_data.get("eloRate", 0)
-                        if elo is None:
-                            elo = 0
-                            
-                        points = user_data.get("points", 0)
-                        if points is None:
-                            points = 0
-                        
-                        statistics = user_data.get("statistics", {})
-                        season_data = statistics.get("season", {})
-                        
-                        completions = season_data.get("completions", {}).get("ranked", 0)
-                        completion_time_ms = season_data.get("completionTime", {}).get("ranked", 0)
-                        
-                        # Fetching wins, forfeits and played matches
-                        wins = season_data.get("wins", {}).get("ranked", 0)
-                        forfeits = season_data.get("forfeits", {}).get("ranked", 0)
-                        played_matches = season_data.get("playedMatches", {}).get("ranked", 0)
-                        
-                        # Calculate forfeit rate percentage safely
-                        forfeit_rate = (forfeits / played_matches * 100) if played_matches > 0 else 0.0
-                        
-                        if completions > 0 and completion_time_ms > 0:
-                            avg_seconds = round((completion_time_ms / completions) / 1000)
-                            
-                            minutes = avg_seconds // 60
-                            seconds = avg_seconds % 60
-                            time_str = f"{minutes}:{seconds:02d}"
-                            
-                            valid_players.append({
-                                "name": username,
-                                "avg_seconds": avg_seconds,
-                                "time_str": time_str,
-                                "wins": wins,
-                                "forfeits": forfeits,
-                                "forfeit_rate": forfeit_rate,
-                                "elo": elo,
-                                "points": points
-                            })
-                    
-                except Exception:
-                    pass
-                    
-                # 0.15 second delay for safety
-                time.sleep(0.15)
+        except Exception:
+            pass
+            
+        time.sleep(0.15)
 
-            # Base sort by average speed
-            valid_players.sort(key=lambda x: x["avg_seconds"])
-            
-            # Generate the HTML website
-            generate_html_site(valid_players)
-            
-            print(f"\n[SUCCESS] [{datetime.now().strftime('%H:%M:%S')}] HTML başarıyla güncellendi!")
-            print(f"File location: {os.path.abspath(FILE_HTML)}")
-            
-            print("--- Döngü tamamlandı. 3 dakika sonra yeniden başlayacak... ---")
-            time.sleep(180) # API ban yememek ve hostu yormamak için 3 dakika bekleme süresi
-            
-        except Exception as main_error:
-            print(f"[CRITICAL ERROR]: {main_error}. 60 saniye sonra sistem yeniden deneyecek...")
-            time.sleep(60)
+    valid_players.sort(key=lambda x: x["avg_seconds"])
+    generate_html_site(valid_players)
+    print(f"\n[SUCCESS] HTML başarıyla güncellendi.")
 
 if __name__ == "__main__":
     main()
