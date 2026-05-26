@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCSR Ranked - Live Average Leaderboard</title>
+    <meta http-equiv="refresh" content="20">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121214;
+            color: #e1e1e6;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #1d1d22;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border: 1px solid #29292e;
+        }
+        h1 {
+            text-align: center;
+            color: #00e676;
+            margin-bottom: 5px;
+            font-size: 28px;
+            letter-spacing: 0.5px;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #8d8d99;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        
+        /* Search Box & Reset Button Grid Layout */
+        .search-container {
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .search-box {
+            flex: 1;
+            padding: 12px 16px;
+            background-color: #121214;
+            border: 1px solid #29292e;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .search-box:focus {
+            border-color: #00e676;
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.2);
+        }
+        
+        /* Modern Reset Button */
+        .reset-btn {
+            padding: 0 24px;
+            background-color: #29292e;
+            border: 1px solid #3e3e44;
+            border-radius: 8px;
+            color: #00e676;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+        }
+        .reset-btn:hover {
+            background-color: #323239;
+            border-color: #00e676;
+        }
+        .reset-btn:active {
+            transform: scale(0.97);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+        }
+        th {
+            background-color: #29292e;
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #121214;
+            user-select: none;
+        }
+        
+        /* Sortable Columns Style */
+        .sortable {
+            color: #00e676;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .sortable:hover {
+            background-color: #323239;
+        }
+        .sortable::after {
+            content: ' ↕';
+            font-size: 10px;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        tr {
+            border-bottom: 1px solid #29292e;
+            transition: background-color 0.2s;
+        }
+        /* Zebra Striping */
+        tr:nth-child(even) {
+            background-color: #1f1f26;
+        }
+        tr:hover {
+            background-color: #26262f !important;
+        }
+        
+        .rank {
+            font-weight: bold;
+            color: #8d8d99;
+            width: 60px;
+        }
+        /* Podium Highlights */
+        .rank-1 { color: #ffd700; font-size: 18px; font-weight: 800; }
+        .rank-2 { color: #c0c0c0; font-size: 17px; font-weight: 800; }
+        .rank-3 { color: #cd7f32; font-size: 16px; font-weight: 800; }
+        
+        .player-link {
+            color: #ffffff;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s, border-bottom 0.2s;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 2px;
+            display: inline-block;
+        }
+        .player-link:hover {
+            color: #00e676;
+            border-bottom: 1px solid #00e676;
+        }
+        
+        .time-badge {
+            background: #00e676;
+            color: #0a0a0c;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .stats-count {
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .elo-text {
+            color: #2196f3;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .points-text {
+            color: #ffb74d;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .forfeit-text {
+            color: #ef5350;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #626269;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>MCSR RANKED COMPREHENSIVE DASHBOARD</h1>
+    <p class="subtitle">Real-time speed, ELO, points, and play-off performance analysis of the top 100 players</p>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-box" placeholder="Search player by name...">
+        <button class="reset-btn" onclick="resetTable()">Reset</button>
+    </div>
+    
+    <table id="leaderboardTable">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player Name</th>
+                <th class="sortable" onclick="sortTable(2, true)">Average Time</th>
+                <th class="sortable" onclick="sortTable(3, true)">Won Matches</th>
+                <th class="sortable" onclick="sortTable(4, true)">Forfeits (Rate)</th>
+                <th class="sortable" onclick="sortTable(5, true)">ELO</th>
+                <th class="sortable" onclick="sortTable(6, true)">Playoff Points</th>
+            </tr>
+        </thead>
+        <tbody>
+    
+            <tr data-orig-index="1">
+                <td class="rank rank-1" data-val="1">#1</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Pinne" target="_blank" class="player-link">Pinne</a>
+                </td>
+                <td data-val="539"><span class="time-badge">8:59</span></td>
+                <td class="stats-count" data-val="34">34</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(1.7%)</span>
+                </td>
+                <td class="elo-text" data-val="2007">2007</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="2">
+                <td class="rank rank-2" data-val="2">#2</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/edcr" target="_blank" class="player-link">edcr</a>
+                </td>
+                <td data-val="542"><span class="time-badge">9:02</span></td>
+                <td class="stats-count" data-val="185">185</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2351">2351</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="3">
+                <td class="rank rank-3" data-val="3">#3</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Infume" target="_blank" class="player-link">Infume</a>
+                </td>
+                <td data-val="542"><span class="time-badge">9:02</span></td>
+                <td class="stats-count" data-val="214">214</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2229">2229</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="4">
+                <td class="rank " data-val="4">#4</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/doogile" target="_blank" class="player-link">doogile</a>
+                </td>
+                <td data-val="542"><span class="time-badge">9:02</span></td>
+                <td class="stats-count" data-val="46">46</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2084">2084</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="5">
+                <td class="rank " data-val="5">#5</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/nhb_" target="_blank" class="player-link">nhb_</a>
+                </td>
+                <td data-val="547"><span class="time-badge">9:07</span></td>
+                <td class="stats-count" data-val="102">102</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2038">2038</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="6">
+                <td class="rank " data-val="6">#6</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/NoHacsJustRoblox" target="_blank" class="player-link">NoHacsJustRoblox</a>
+                </td>
+                <td data-val="548"><span class="time-badge">9:08</span></td>
+                <td class="stats-count" data-val="47">47</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1947">1947</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="7">
+                <td class="rank " data-val="7">#7</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/lowk3y_" target="_blank" class="player-link">lowk3y_</a>
+                </td>
+                <td data-val="549"><span class="time-badge">9:09</span></td>
+                <td class="stats-count" data-val="81">81</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2158">2158</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="8">
+                <td class="rank " data-val="8">#8</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/TUDORULE" target="_blank" class="player-link">TUDORULE</a>
+                </td>
+                <td data-val="553"><span class="time-badge">9:13</span></td>
+                <td class="stats-count" data-val="80">80</td>
+                <td class="stats-count" data-val="31">
+                    31 <span class="forfeit-text">(20.8%)</span>
+                </td>
+                <td class="elo-text" data-val="1790">1790</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="9">
+                <td class="rank " data-val="9">#9</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/BlazeMind" target="_blank" class="player-link">BlazeMind</a>
+                </td>
+                <td data-val="556"><span class="time-badge">9:16</span></td>
+                <td class="stats-count" data-val="98">98</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2067">2067</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="10">
+                <td class="rank " data-val="10">#10</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/nahhann" target="_blank" class="player-link">nahhann</a>
+                </td>
+                <td data-val="558"><span class="time-badge">9:18</span></td>
+                <td class="stats-count" data-val="174">174</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2129">2129</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="11">
+                <td class="rank " data-val="11">#11</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/HDMICables" target="_blank" class="player-link">HDMICables</a>
+                </td>
+                <td data-val="558"><span class="time-badge">9:18</span></td>
+                <td class="stats-count" data-val="70">70</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1944">1944</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="12">
+                <td class="rank " data-val="12">#12</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Aquacorde" target="_blank" class="player-link">Aquacorde</a>
+                </td>
+                <td data-val="562"><span class="time-badge">9:22</span></td>
+                <td class="stats-count" data-val="140">140</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(0.4%)</span>
+                </td>
+                <td class="elo-text" data-val="2155">2155</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="13">
+                <td class="rank " data-val="13">#13</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/7rowl" target="_blank" class="player-link">7rowl</a>
+                </td>
+                <td data-val="562"><span class="time-badge">9:22</span></td>
+                <td class="stats-count" data-val="13">13</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1799">1799</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="14">
+                <td class="rank " data-val="14">#14</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/silverrruns" target="_blank" class="player-link">silverrruns</a>
+                </td>
+                <td data-val="565"><span class="time-badge">9:25</span></td>
+                <td class="stats-count" data-val="98">98</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2121">2121</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="15">
+                <td class="rank " data-val="15">#15</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Feinberg" target="_blank" class="player-link">Feinberg</a>
+                </td>
+                <td data-val="569"><span class="time-badge">9:29</span></td>
+                <td class="stats-count" data-val="177">177</td>
+                <td class="stats-count" data-val="4">
+                    4 <span class="forfeit-text">(1.4%)</span>
+                </td>
+                <td class="elo-text" data-val="2174">2174</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="16">
+                <td class="rank " data-val="16">#16</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Ancoboyy" target="_blank" class="player-link">Ancoboyy</a>
+                </td>
+                <td data-val="569"><span class="time-badge">9:29</span></td>
+                <td class="stats-count" data-val="141">141</td>
+                <td class="stats-count" data-val="25">
+                    25 <span class="forfeit-text">(9.4%)</span>
+                </td>
+                <td class="elo-text" data-val="2006">2006</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="17">
+                <td class="rank " data-val="17">#17</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/BeefSalad" target="_blank" class="player-link">BeefSalad</a>
+                </td>
+                <td data-val="570"><span class="time-badge">9:30</span></td>
+                <td class="stats-count" data-val="317">317</td>
+                <td class="stats-count" data-val="56">
+                    56 <span class="forfeit-text">(9.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1995">1995</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="18">
+                <td class="rank " data-val="18">#18</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/KenanKardes" target="_blank" class="player-link">KenanKardes</a>
+                </td>
+                <td data-val="570"><span class="time-badge">9:30</span></td>
+                <td class="stats-count" data-val="111">111</td>
+                <td class="stats-count" data-val="9">
+                    9 <span class="forfeit-text">(4.3%)</span>
+                </td>
+                <td class="elo-text" data-val="1855">1855</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="19">
+                <td class="rank " data-val="19">#19</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/steez" target="_blank" class="player-link">steez</a>
+                </td>
+                <td data-val="572"><span class="time-badge">9:32</span></td>
+                <td class="stats-count" data-val="116">116</td>
+                <td class="stats-count" data-val="15">
+                    15 <span class="forfeit-text">(7.3%)</span>
+                </td>
+                <td class="elo-text" data-val="2111">2111</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="20">
+                <td class="rank " data-val="20">#20</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/bing_pigs" target="_blank" class="player-link">bing_pigs</a>
+                </td>
+                <td data-val="576"><span class="time-badge">9:36</span></td>
+                <td class="stats-count" data-val="174">174</td>
+                <td class="stats-count" data-val="12">
+                    12 <span class="forfeit-text">(4.1%)</span>
+                </td>
+                <td class="elo-text" data-val="1975">1975</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="21">
+                <td class="rank " data-val="21">#21</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/dolqhin" target="_blank" class="player-link">dolqhin</a>
+                </td>
+                <td data-val="576"><span class="time-badge">9:36</span></td>
+                <td class="stats-count" data-val="52">52</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1905">1905</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="22">
+                <td class="rank " data-val="22">#22</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/wagasylvie" target="_blank" class="player-link">wagasylvie</a>
+                </td>
+                <td data-val="578"><span class="time-badge">9:38</span></td>
+                <td class="stats-count" data-val="68">68</td>
+                <td class="stats-count" data-val="11">
+                    11 <span class="forfeit-text">(8.7%)</span>
+                </td>
+                <td class="elo-text" data-val="1918">1918</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="23">
+                <td class="rank " data-val="23">#23</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Watermelon1708" target="_blank" class="player-link">Watermelon1708</a>
+                </td>
+                <td data-val="580"><span class="time-badge">9:40</span></td>
+                <td class="stats-count" data-val="93">93</td>
+                <td class="stats-count" data-val="17">
+                    17 <span class="forfeit-text">(10.8%)</span>
+                </td>
+                <td class="elo-text" data-val="2031">2031</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="24">
+                <td class="rank " data-val="24">#24</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/retropog" target="_blank" class="player-link">retropog</a>
+                </td>
+                <td data-val="580"><span class="time-badge">9:40</span></td>
+                <td class="stats-count" data-val="91">91</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1904">1904</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="25">
+                <td class="rank " data-val="25">#25</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/woofdoggo_" target="_blank" class="player-link">woofdoggo_</a>
+                </td>
+                <td data-val="582"><span class="time-badge">9:42</span></td>
+                <td class="stats-count" data-val="87">87</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2139">2139</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="26">
+                <td class="rank " data-val="26">#26</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/pavkin" target="_blank" class="player-link">pavkin</a>
+                </td>
+                <td data-val="582"><span class="time-badge">9:42</span></td>
+                <td class="stats-count" data-val="87">87</td>
+                <td class="stats-count" data-val="16">
+                    16 <span class="forfeit-text">(10.5%)</span>
+                </td>
+                <td class="elo-text" data-val="2037">2037</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="27">
+                <td class="rank " data-val="27">#27</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/SocratesDisciple" target="_blank" class="player-link">SocratesDisciple</a>
+                </td>
+                <td data-val="582"><span class="time-badge">9:42</span></td>
+                <td class="stats-count" data-val="137">137</td>
+                <td class="stats-count" data-val="33">
+                    33 <span class="forfeit-text">(12.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1978">1978</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="28">
+                <td class="rank " data-val="28">#28</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Seauu" target="_blank" class="player-link">Seauu</a>
+                </td>
+                <td data-val="582"><span class="time-badge">9:42</span></td>
+                <td class="stats-count" data-val="28">28</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1855">1855</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="29">
+                <td class="rank " data-val="29">#29</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/BadGamer" target="_blank" class="player-link">BadGamer</a>
+                </td>
+                <td data-val="586"><span class="time-badge">9:46</span></td>
+                <td class="stats-count" data-val="73">73</td>
+                <td class="stats-count" data-val="13">
+                    13 <span class="forfeit-text">(11.5%)</span>
+                </td>
+                <td class="elo-text" data-val="2081">2081</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="30">
+                <td class="rank " data-val="30">#30</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/vorbhfan3" target="_blank" class="player-link">vorbhfan3</a>
+                </td>
+                <td data-val="586"><span class="time-badge">9:46</span></td>
+                <td class="stats-count" data-val="176">176</td>
+                <td class="stats-count" data-val="12">
+                    12 <span class="forfeit-text">(3.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1838">1838</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="31">
+                <td class="rank " data-val="31">#31</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/nEmerald" target="_blank" class="player-link">nEmerald</a>
+                </td>
+                <td data-val="588"><span class="time-badge">9:48</span></td>
+                <td class="stats-count" data-val="178">178</td>
+                <td class="stats-count" data-val="23">
+                    23 <span class="forfeit-text">(6.8%)</span>
+                </td>
+                <td class="elo-text" data-val="2101">2101</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="32">
+                <td class="rank " data-val="32">#32</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Erikfzf" target="_blank" class="player-link">Erikfzf</a>
+                </td>
+                <td data-val="588"><span class="time-badge">9:48</span></td>
+                <td class="stats-count" data-val="77">77</td>
+                <td class="stats-count" data-val="2">
+                    2 <span class="forfeit-text">(1.5%)</span>
+                </td>
+                <td class="elo-text" data-val="2001">2001</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="33">
+                <td class="rank " data-val="33">#33</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/vorbhfan6" target="_blank" class="player-link">vorbhfan6</a>
+                </td>
+                <td data-val="589"><span class="time-badge">9:49</span></td>
+                <td class="stats-count" data-val="161">161</td>
+                <td class="stats-count" data-val="16">
+                    16 <span class="forfeit-text">(5.4%)</span>
+                </td>
+                <td class="elo-text" data-val="2107">2107</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="34">
+                <td class="rank " data-val="34">#34</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/priffie" target="_blank" class="player-link">priffie</a>
+                </td>
+                <td data-val="589"><span class="time-badge">9:49</span></td>
+                <td class="stats-count" data-val="62">62</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2040">2040</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="35">
+                <td class="rank " data-val="35">#35</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/yjako" target="_blank" class="player-link">yjako</a>
+                </td>
+                <td data-val="589"><span class="time-badge">9:49</span></td>
+                <td class="stats-count" data-val="48">48</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2011">2011</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="36">
+                <td class="rank " data-val="36">#36</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/nonsochiamaa" target="_blank" class="player-link">nonsochiamaa</a>
+                </td>
+                <td data-val="589"><span class="time-badge">9:49</span></td>
+                <td class="stats-count" data-val="130">130</td>
+                <td class="stats-count" data-val="43">
+                    43 <span class="forfeit-text">(16.6%)</span>
+                </td>
+                <td class="elo-text" data-val="1795">1795</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="37">
+                <td class="rank " data-val="37">#37</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/ulsah1n" target="_blank" class="player-link">ulsah1n</a>
+                </td>
+                <td data-val="590"><span class="time-badge">9:50</span></td>
+                <td class="stats-count" data-val="152">152</td>
+                <td class="stats-count" data-val="22">
+                    22 <span class="forfeit-text">(8.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2012">2012</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="38">
+                <td class="rank " data-val="38">#38</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/dinonuggieboi" target="_blank" class="player-link">dinonuggieboi</a>
+                </td>
+                <td data-val="590"><span class="time-badge">9:50</span></td>
+                <td class="stats-count" data-val="104">104</td>
+                <td class="stats-count" data-val="9">
+                    9 <span class="forfeit-text">(4.8%)</span>
+                </td>
+                <td class="elo-text" data-val="1974">1974</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="39">
+                <td class="rank " data-val="39">#39</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/kohout135" target="_blank" class="player-link">kohout135</a>
+                </td>
+                <td data-val="591"><span class="time-badge">9:51</span></td>
+                <td class="stats-count" data-val="64">64</td>
+                <td class="stats-count" data-val="4">
+                    4 <span class="forfeit-text">(3.4%)</span>
+                </td>
+                <td class="elo-text" data-val="1824">1824</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="40">
+                <td class="rank " data-val="40">#40</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/okshey" target="_blank" class="player-link">okshey</a>
+                </td>
+                <td data-val="592"><span class="time-badge">9:52</span></td>
+                <td class="stats-count" data-val="150">150</td>
+                <td class="stats-count" data-val="3">
+                    3 <span class="forfeit-text">(1.1%)</span>
+                </td>
+                <td class="elo-text" data-val="1946">1946</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="41">
+                <td class="rank " data-val="41">#41</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/vorbh" target="_blank" class="player-link">vorbh</a>
+                </td>
+                <td data-val="593"><span class="time-badge">9:53</span></td>
+                <td class="stats-count" data-val="234">234</td>
+                <td class="stats-count" data-val="12">
+                    12 <span class="forfeit-text">(2.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1860">1860</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="42">
+                <td class="rank " data-val="42">#42</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/loodlow" target="_blank" class="player-link">loodlow</a>
+                </td>
+                <td data-val="595"><span class="time-badge">9:55</span></td>
+                <td class="stats-count" data-val="52">52</td>
+                <td class="stats-count" data-val="19">
+                    19 <span class="forfeit-text">(20.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1793">1793</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="43">
+                <td class="rank " data-val="43">#43</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/TuCarta" target="_blank" class="player-link">TuCarta</a>
+                </td>
+                <td data-val="597"><span class="time-badge">9:57</span></td>
+                <td class="stats-count" data-val="63">63</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(0.9%)</span>
+                </td>
+                <td class="elo-text" data-val="1868">1868</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="44">
+                <td class="rank " data-val="44">#44</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/SammmyG" target="_blank" class="player-link">SammmyG</a>
+                </td>
+                <td data-val="598"><span class="time-badge">9:58</span></td>
+                <td class="stats-count" data-val="66">66</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2014">2014</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="45">
+                <td class="rank " data-val="45">#45</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/subdas" target="_blank" class="player-link">subdas</a>
+                </td>
+                <td data-val="598"><span class="time-badge">9:58</span></td>
+                <td class="stats-count" data-val="404">404</td>
+                <td class="stats-count" data-val="94">
+                    94 <span class="forfeit-text">(11.9%)</span>
+                </td>
+                <td class="elo-text" data-val="1914">1914</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="46">
+                <td class="rank " data-val="46">#46</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/sevensix_" target="_blank" class="player-link">sevensix_</a>
+                </td>
+                <td data-val="599"><span class="time-badge">9:59</span></td>
+                <td class="stats-count" data-val="105">105</td>
+                <td class="stats-count" data-val="9">
+                    9 <span class="forfeit-text">(4.4%)</span>
+                </td>
+                <td class="elo-text" data-val="1878">1878</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="47">
+                <td class="rank " data-val="47">#47</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/iluappi" target="_blank" class="player-link">iluappi</a>
+                </td>
+                <td data-val="601"><span class="time-badge">10:01</span></td>
+                <td class="stats-count" data-val="157">157</td>
+                <td class="stats-count" data-val="7">
+                    7 <span class="forfeit-text">(2.3%)</span>
+                </td>
+                <td class="elo-text" data-val="2009">2009</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="48">
+                <td class="rank " data-val="48">#48</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Zylenox" target="_blank" class="player-link">Zylenox</a>
+                </td>
+                <td data-val="601"><span class="time-badge">10:01</span></td>
+                <td class="stats-count" data-val="30">30</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1923">1923</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="49">
+                <td class="rank " data-val="49">#49</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/MrBudgiee" target="_blank" class="player-link">MrBudgiee</a>
+                </td>
+                <td data-val="602"><span class="time-badge">10:02</span></td>
+                <td class="stats-count" data-val="168">168</td>
+                <td class="stats-count" data-val="28">
+                    28 <span class="forfeit-text">(8.6%)</span>
+                </td>
+                <td class="elo-text" data-val="1975">1975</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="50">
+                <td class="rank " data-val="50">#50</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/paukll" target="_blank" class="player-link">paukll</a>
+                </td>
+                <td data-val="602"><span class="time-badge">10:02</span></td>
+                <td class="stats-count" data-val="68">68</td>
+                <td class="stats-count" data-val="17">
+                    17 <span class="forfeit-text">(13.3%)</span>
+                </td>
+                <td class="elo-text" data-val="1944">1944</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="51">
+                <td class="rank " data-val="51">#51</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/cofesho" target="_blank" class="player-link">cofesho</a>
+                </td>
+                <td data-val="602"><span class="time-badge">10:02</span></td>
+                <td class="stats-count" data-val="186">186</td>
+                <td class="stats-count" data-val="2">
+                    2 <span class="forfeit-text">(0.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1892">1892</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="52">
+                <td class="rank " data-val="52">#52</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/dandannyboy" target="_blank" class="player-link">dandannyboy</a>
+                </td>
+                <td data-val="602"><span class="time-badge">10:02</span></td>
+                <td class="stats-count" data-val="184">184</td>
+                <td class="stats-count" data-val="51">
+                    51 <span class="forfeit-text">(14.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1875">1875</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="53">
+                <td class="rank " data-val="53">#53</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/vorbhfan4" target="_blank" class="player-link">vorbhfan4</a>
+                </td>
+                <td data-val="603"><span class="time-badge">10:03</span></td>
+                <td class="stats-count" data-val="160">160</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1814">1814</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="54">
+                <td class="rank " data-val="54">#54</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Brunted" target="_blank" class="player-link">Brunted</a>
+                </td>
+                <td data-val="604"><span class="time-badge">10:04</span></td>
+                <td class="stats-count" data-val="161">161</td>
+                <td class="stats-count" data-val="2">
+                    2 <span class="forfeit-text">(0.6%)</span>
+                </td>
+                <td class="elo-text" data-val="1937">1937</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="55">
+                <td class="rank " data-val="55">#55</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/cornflakesmcsr" target="_blank" class="player-link">cornflakesmcsr</a>
+                </td>
+                <td data-val="605"><span class="time-badge">10:05</span></td>
+                <td class="stats-count" data-val="109">109</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1803">1803</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="56">
+                <td class="rank " data-val="56">#56</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/v_strid" target="_blank" class="player-link">v_strid</a>
+                </td>
+                <td data-val="606"><span class="time-badge">10:06</span></td>
+                <td class="stats-count" data-val="287">287</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2037">2037</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="57">
+                <td class="rank " data-val="57">#57</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/nyachloe" target="_blank" class="player-link">nyachloe</a>
+                </td>
+                <td data-val="606"><span class="time-badge">10:06</span></td>
+                <td class="stats-count" data-val="117">117</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1972">1972</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="58">
+                <td class="rank " data-val="58">#58</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/takachaaaaaaan" target="_blank" class="player-link">takachaaaaaaan</a>
+                </td>
+                <td data-val="611"><span class="time-badge">10:11</span></td>
+                <td class="stats-count" data-val="66">66</td>
+                <td class="stats-count" data-val="26">
+                    26 <span class="forfeit-text">(20.3%)</span>
+                </td>
+                <td class="elo-text" data-val="1820">1820</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="59">
+                <td class="rank " data-val="59">#59</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/mukvl" target="_blank" class="player-link">mukvl</a>
+                </td>
+                <td data-val="614"><span class="time-badge">10:14</span></td>
+                <td class="stats-count" data-val="59">59</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(1.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1928">1928</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="60">
+                <td class="rank " data-val="60">#60</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/amariyyyy" target="_blank" class="player-link">amariyyyy</a>
+                </td>
+                <td data-val="615"><span class="time-badge">10:15</span></td>
+                <td class="stats-count" data-val="114">114</td>
+                <td class="stats-count" data-val="9">
+                    9 <span class="forfeit-text">(4.3%)</span>
+                </td>
+                <td class="elo-text" data-val="2004">2004</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="61">
+                <td class="rank " data-val="61">#61</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/AutomattPLUS" target="_blank" class="player-link">AutomattPLUS</a>
+                </td>
+                <td data-val="617"><span class="time-badge">10:17</span></td>
+                <td class="stats-count" data-val="71">71</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1992">1992</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="62">
+                <td class="rank " data-val="62">#62</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Lexanh" target="_blank" class="player-link">Lexanh</a>
+                </td>
+                <td data-val="620"><span class="time-badge">10:20</span></td>
+                <td class="stats-count" data-val="141">141</td>
+                <td class="stats-count" data-val="18">
+                    18 <span class="forfeit-text">(6.4%)</span>
+                </td>
+                <td class="elo-text" data-val="1857">1857</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="63">
+                <td class="rank " data-val="63">#63</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/thecamo6" target="_blank" class="player-link">thecamo6</a>
+                </td>
+                <td data-val="621"><span class="time-badge">10:21</span></td>
+                <td class="stats-count" data-val="186">186</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1836">1836</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="64">
+                <td class="rank " data-val="64">#64</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Gabryll" target="_blank" class="player-link">Gabryll</a>
+                </td>
+                <td data-val="622"><span class="time-badge">10:22</span></td>
+                <td class="stats-count" data-val="175">175</td>
+                <td class="stats-count" data-val="4">
+                    4 <span class="forfeit-text">(1.2%)</span>
+                </td>
+                <td class="elo-text" data-val="2009">2009</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="65">
+                <td class="rank " data-val="65">#65</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/tookannn" target="_blank" class="player-link">tookannn</a>
+                </td>
+                <td data-val="623"><span class="time-badge">10:23</span></td>
+                <td class="stats-count" data-val="140">140</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1803">1803</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="66">
+                <td class="rank " data-val="66">#66</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Unknwonc" target="_blank" class="player-link">Unknwonc</a>
+                </td>
+                <td data-val="624"><span class="time-badge">10:24</span></td>
+                <td class="stats-count" data-val="170">170</td>
+                <td class="stats-count" data-val="52">
+                    52 <span class="forfeit-text">(14.9%)</span>
+                </td>
+                <td class="elo-text" data-val="1876">1876</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="67">
+                <td class="rank " data-val="67">#67</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/pigswitch" target="_blank" class="player-link">pigswitch</a>
+                </td>
+                <td data-val="626"><span class="time-badge">10:26</span></td>
+                <td class="stats-count" data-val="200">200</td>
+                <td class="stats-count" data-val="76">
+                    76 <span class="forfeit-text">(18.2%)</span>
+                </td>
+                <td class="elo-text" data-val="1816">1816</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="68">
+                <td class="rank " data-val="68">#68</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/1_viewer" target="_blank" class="player-link">1_viewer</a>
+                </td>
+                <td data-val="627"><span class="time-badge">10:27</span></td>
+                <td class="stats-count" data-val="226">226</td>
+                <td class="stats-count" data-val="35">
+                    35 <span class="forfeit-text">(7.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1821">1821</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="69">
+                <td class="rank " data-val="69">#69</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/suravil" target="_blank" class="player-link">suravil</a>
+                </td>
+                <td data-val="632"><span class="time-badge">10:32</span></td>
+                <td class="stats-count" data-val="201">201</td>
+                <td class="stats-count" data-val="12">
+                    12 <span class="forfeit-text">(3.0%)</span>
+                </td>
+                <td class="elo-text" data-val="2047">2047</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="70">
+                <td class="rank " data-val="70">#70</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Sadekeppi" target="_blank" class="player-link">Sadekeppi</a>
+                </td>
+                <td data-val="635"><span class="time-badge">10:35</span></td>
+                <td class="stats-count" data-val="34">34</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1814">1814</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="71">
+                <td class="rank " data-val="71">#71</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/a4102545" target="_blank" class="player-link">a4102545</a>
+                </td>
+                <td data-val="635"><span class="time-badge">10:35</span></td>
+                <td class="stats-count" data-val="85">85</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(0.6%)</span>
+                </td>
+                <td class="elo-text" data-val="1780">1780</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="72">
+                <td class="rank " data-val="72">#72</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/benemies" target="_blank" class="player-link">benemies</a>
+                </td>
+                <td data-val="637"><span class="time-badge">10:37</span></td>
+                <td class="stats-count" data-val="234">234</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1906">1906</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="73">
+                <td class="rank " data-val="73">#73</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/vorbhfan5" target="_blank" class="player-link">vorbhfan5</a>
+                </td>
+                <td data-val="638"><span class="time-badge">10:38</span></td>
+                <td class="stats-count" data-val="43">43</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1882">1882</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="74">
+                <td class="rank " data-val="74">#74</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/4antoo" target="_blank" class="player-link">4antoo</a>
+                </td>
+                <td data-val="638"><span class="time-badge">10:38</span></td>
+                <td class="stats-count" data-val="115">115</td>
+                <td class="stats-count" data-val="8">
+                    8 <span class="forfeit-text">(3.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1810">1810</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="75">
+                <td class="rank " data-val="75">#75</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/staremc" target="_blank" class="player-link">staremc</a>
+                </td>
+                <td data-val="639"><span class="time-badge">10:39</span></td>
+                <td class="stats-count" data-val="128">128</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1892">1892</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="76">
+                <td class="rank " data-val="76">#76</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/fnhvr" target="_blank" class="player-link">fnhvr</a>
+                </td>
+                <td data-val="639"><span class="time-badge">10:39</span></td>
+                <td class="stats-count" data-val="52">52</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(1.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1834">1834</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="77">
+                <td class="rank " data-val="77">#77</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/_Pasha1337_" target="_blank" class="player-link">_Pasha1337_</a>
+                </td>
+                <td data-val="639"><span class="time-badge">10:39</span></td>
+                <td class="stats-count" data-val="119">119</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1824">1824</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="78">
+                <td class="rank " data-val="78">#78</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Birdeyyy" target="_blank" class="player-link">Birdeyyy</a>
+                </td>
+                <td data-val="639"><span class="time-badge">10:39</span></td>
+                <td class="stats-count" data-val="108">108</td>
+                <td class="stats-count" data-val="2">
+                    2 <span class="forfeit-text">(0.9%)</span>
+                </td>
+                <td class="elo-text" data-val="1809">1809</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="79">
+                <td class="rank " data-val="79">#79</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/hsbi" target="_blank" class="player-link">hsbi</a>
+                </td>
+                <td data-val="640"><span class="time-badge">10:40</span></td>
+                <td class="stats-count" data-val="26">26</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1815">1815</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="80">
+                <td class="rank " data-val="80">#80</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/limefrog" target="_blank" class="player-link">limefrog</a>
+                </td>
+                <td data-val="641"><span class="time-badge">10:41</span></td>
+                <td class="stats-count" data-val="45">45</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1806">1806</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="81">
+                <td class="rank " data-val="81">#81</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/9tsu" target="_blank" class="player-link">9tsu</a>
+                </td>
+                <td data-val="646"><span class="time-badge">10:46</span></td>
+                <td class="stats-count" data-val="29">29</td>
+                <td class="stats-count" data-val="4">
+                    4 <span class="forfeit-text">(8.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1780">1780</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="82">
+                <td class="rank " data-val="82">#82</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Anjoru" target="_blank" class="player-link">Anjoru</a>
+                </td>
+                <td data-val="647"><span class="time-badge">10:47</span></td>
+                <td class="stats-count" data-val="113">113</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1834">1834</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="83">
+                <td class="rank " data-val="83">#83</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/_pizu" target="_blank" class="player-link">_pizu</a>
+                </td>
+                <td data-val="648"><span class="time-badge">10:48</span></td>
+                <td class="stats-count" data-val="150">150</td>
+                <td class="stats-count" data-val="81">
+                    81 <span class="forfeit-text">(26.1%)</span>
+                </td>
+                <td class="elo-text" data-val="1796">1796</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="84">
+                <td class="rank " data-val="84">#84</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Ale267" target="_blank" class="player-link">Ale267</a>
+                </td>
+                <td data-val="649"><span class="time-badge">10:49</span></td>
+                <td class="stats-count" data-val="54">54</td>
+                <td class="stats-count" data-val="7">
+                    7 <span class="forfeit-text">(7.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1818">1818</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="85">
+                <td class="rank " data-val="85">#85</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/JustAltoid" target="_blank" class="player-link">JustAltoid</a>
+                </td>
+                <td data-val="651"><span class="time-badge">10:51</span></td>
+                <td class="stats-count" data-val="40">40</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1892">1892</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="86">
+                <td class="rank " data-val="86">#86</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/WumbusZero" target="_blank" class="player-link">WumbusZero</a>
+                </td>
+                <td data-val="660"><span class="time-badge">11:00</span></td>
+                <td class="stats-count" data-val="78">78</td>
+                <td class="stats-count" data-val="12">
+                    12 <span class="forfeit-text">(8.1%)</span>
+                </td>
+                <td class="elo-text" data-val="1815">1815</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="87">
+                <td class="rank " data-val="87">#87</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/boywithcards" target="_blank" class="player-link">boywithcards</a>
+                </td>
+                <td data-val="661"><span class="time-badge">11:01</span></td>
+                <td class="stats-count" data-val="142">142</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1789">1789</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="88">
+                <td class="rank " data-val="88">#88</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/blobserr" target="_blank" class="player-link">blobserr</a>
+                </td>
+                <td data-val="670"><span class="time-badge">11:10</span></td>
+                <td class="stats-count" data-val="186">186</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1913">1913</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="89">
+                <td class="rank " data-val="89">#89</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/90Tom" target="_blank" class="player-link">90Tom</a>
+                </td>
+                <td data-val="671"><span class="time-badge">11:11</span></td>
+                <td class="stats-count" data-val="26">26</td>
+                <td class="stats-count" data-val="1">
+                    1 <span class="forfeit-text">(2.3%)</span>
+                </td>
+                <td class="elo-text" data-val="1774">1774</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="90">
+                <td class="rank " data-val="90">#90</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Kickz" target="_blank" class="player-link">Kickz</a>
+                </td>
+                <td data-val="672"><span class="time-badge">11:12</span></td>
+                <td class="stats-count" data-val="314">314</td>
+                <td class="stats-count" data-val="47">
+                    47 <span class="forfeit-text">(7.2%)</span>
+                </td>
+                <td class="elo-text" data-val="1801">1801</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="91">
+                <td class="rank " data-val="91">#91</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/sh0jan" target="_blank" class="player-link">sh0jan</a>
+                </td>
+                <td data-val="672"><span class="time-badge">11:12</span></td>
+                <td class="stats-count" data-val="84">84</td>
+                <td class="stats-count" data-val="16">
+                    16 <span class="forfeit-text">(10.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1777">1777</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="92">
+                <td class="rank " data-val="92">#92</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/IBringSuffering" target="_blank" class="player-link">IBringSuffering</a>
+                </td>
+                <td data-val="674"><span class="time-badge">11:14</span></td>
+                <td class="stats-count" data-val="80">80</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1820">1820</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="93">
+                <td class="rank " data-val="93">#93</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/TheGamerGuyy" target="_blank" class="player-link">TheGamerGuyy</a>
+                </td>
+                <td data-val="674"><span class="time-badge">11:14</span></td>
+                <td class="stats-count" data-val="164">164</td>
+                <td class="stats-count" data-val="43">
+                    43 <span class="forfeit-text">(13.4%)</span>
+                </td>
+                <td class="elo-text" data-val="1819">1819</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="94">
+                <td class="rank " data-val="94">#94</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Lathilla" target="_blank" class="player-link">Lathilla</a>
+                </td>
+                <td data-val="680"><span class="time-badge">11:20</span></td>
+                <td class="stats-count" data-val="47">47</td>
+                <td class="stats-count" data-val="4">
+                    4 <span class="forfeit-text">(4.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1778">1778</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="95">
+                <td class="rank " data-val="95">#95</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/VojtaH007" target="_blank" class="player-link">VojtaH007</a>
+                </td>
+                <td data-val="681"><span class="time-badge">11:21</span></td>
+                <td class="stats-count" data-val="164">164</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1807">1807</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="96">
+                <td class="rank " data-val="96">#96</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Big_Wazza69" target="_blank" class="player-link">Big_Wazza69</a>
+                </td>
+                <td data-val="683"><span class="time-badge">11:23</span></td>
+                <td class="stats-count" data-val="28">28</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1800">1800</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="97">
+                <td class="rank " data-val="97">#97</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/Zbom" target="_blank" class="player-link">Zbom</a>
+                </td>
+                <td data-val="693"><span class="time-badge">11:33</span></td>
+                <td class="stats-count" data-val="117">117</td>
+                <td class="stats-count" data-val="7">
+                    7 <span class="forfeit-text">(3.1%)</span>
+                </td>
+                <td class="elo-text" data-val="1778">1778</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="98">
+                <td class="rank " data-val="98">#98</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/yuushahinmeru" target="_blank" class="player-link">yuushahinmeru</a>
+                </td>
+                <td data-val="699"><span class="time-badge">11:39</span></td>
+                <td class="stats-count" data-val="230">230</td>
+                <td class="stats-count" data-val="64">
+                    64 <span class="forfeit-text">(13.5%)</span>
+                </td>
+                <td class="elo-text" data-val="1791">1791</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="99">
+                <td class="rank " data-val="99">#99</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/litdab" target="_blank" class="player-link">litdab</a>
+                </td>
+                <td data-val="703"><span class="time-badge">11:43</span></td>
+                <td class="stats-count" data-val="179">179</td>
+                <td class="stats-count" data-val="13">
+                    13 <span class="forfeit-text">(3.8%)</span>
+                </td>
+                <td class="elo-text" data-val="1786">1786</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+            <tr data-orig-index="100">
+                <td class="rank " data-val="100">#100</td>
+                <td>
+                    <a href="https://mcsrranked.com/stats/ninaknowswhen" target="_blank" class="player-link">ninaknowswhen</a>
+                </td>
+                <td data-val="703"><span class="time-badge">11:43</span></td>
+                <td class="stats-count" data-val="216">216</td>
+                <td class="stats-count" data-val="0">
+                    0 <span class="forfeit-text">(0.0%)</span>
+                </td>
+                <td class="elo-text" data-val="1784">1784</td>
+                <td class="points-text" data-val="0">0</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        Last Updated: 2026-05-26 23:21:01 | Developed by kestaneci
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll('#leaderboardTable tbody tr');
+    
+    rows.forEach(row => {
+        let playerName = row.querySelector('.player-link').innerText.toLowerCase();
+        if (playerName.includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+let sortDirections = [true, true, true, true, true, true, true]; 
+
+function sortTable(colIndex, isNumeric) {
+    let table = document.getElementById("leaderboardTable");
+    let tbody = table.querySelector("tbody");
+    let rows = Array.from(tbody.querySelectorAll("tr"));
+    
+    let ascending = sortDirections[colIndex];
+    sortDirections[colIndex] = !ascending; 
+    
+    rows.sort((rowA, rowB) => {
+        let cellA = rowA.children[colIndex];
+        let cellB = rowB.children[colIndex];
+        
+        let valA = cellA.getAttribute("data-val") || cellA.innerText.trim();
+        let valB = cellB.getAttribute("data-val") || cellB.innerText.trim();
+        
+        if (isNumeric) {
+            return ascending ? parseFloat(valA) - parseFloat(valB) : parseFloat(valB) - parseFloat(valA);
+        } else {
+            return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function resetTable() {
+    document.getElementById('searchInput').value = '';
+    
+    let table = document.getElementById("leaderboardTable");
+    let tbody = table.querySelector("tbody");
+    let rows = Array.from(tbody.querySelectorAll("tr"));
+    
+    rows.sort((rowA, rowB) => {
+        let indexA = parseInt(rowA.getAttribute("data-orig-index"));
+        let indexB = parseInt(rowB.getAttribute("data-orig-index"));
+        return indexA - indexB;
+    });
+    
+    sortDirections = [true, true, true, true, true, true, true];
+    
+    rows.forEach(row => {
+        row.style.display = '';
+        tbody.appendChild(row);
+    });
+}
+</script>
+
+</body>
+</html>
+    
