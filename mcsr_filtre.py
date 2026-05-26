@@ -57,7 +57,7 @@ def read_players_from_input_txt():
     return players
 
 def generate_html_site(valid_players):
-    """Converts the calculated data into a beautiful HTML webpage."""
+    """Converts the calculated data into a beautiful HTML webpage with background data fetching."""
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     html_template = f"""<!DOCTYPE html>
@@ -66,7 +66,6 @@ def generate_html_site(valid_players):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCSR Ranked - Live Average Leaderboard</title>
-    <meta http-equiv="refresh" content="20">
     <style>
         body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -306,14 +305,15 @@ def generate_html_site(valid_players):
         </tbody>
     </table>
     
-    <div class="footer">
+    <div class="footer" id="lastUpdatedFooter">
         Last Updated: {current_time} | Developed by kestaneci
     </div>
 </div>
 
 <script>
-document.getElementById('searchInput').addEventListener('keyup', function() {{
-    let filter = this.value.toLowerCase();
+// Arama motoru fonksiyonu
+function applySearchFilter() {{
+    let filter = document.getElementById('searchInput').value.toLowerCase();
     let rows = document.querySelectorAll('#leaderboardTable tbody tr');
     
     rows.forEach(row => {{
@@ -324,7 +324,9 @@ document.getElementById('searchInput').addEventListener('keyup', function() {{
             row.style.display = 'none';
         }}
     }});
-}});
+}}
+
+document.getElementById('searchInput').addEventListener('keyup', applySearchFilter);
 
 let sortDirections = [true, true, true, true, true, true, true]; 
 
@@ -373,6 +375,30 @@ function resetTable() {{
         tbody.appendChild(row);
     }});
 }}
+
+// AKILLI CANLI GÜNCELLEME (ARKA PLAN AJAX)
+// 20 saniyede bir sayfayı yenilemeden verileri ve saati sessizce tazeleyen kısım
+setInterval(function() {{
+    fetch(window.location.href, {{ cache: 'no-store' }})
+    .then(response => response.text())
+    .then(html => {{
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        
+        // Sadece tablonun gövdesini (tbody) ve saati güncelle
+        let newTbody = doc.querySelector('#leaderboardTable tbody');
+        let newFooter = doc.querySelector('#lastUpdatedFooter');
+        
+        if(newTbody && newFooter) {{
+            document.querySelector('#leaderboardTable tbody').innerHTML = newTbody.innerHTML;
+            document.querySelector('#lastUpdatedFooter').innerHTML = newFooter.innerHTML;
+            
+            // Güncelleme yapıldıktan sonra eğer kullanıcı arama kutusuna bir şey yazdıysa filtreyi koru
+            applySearchFilter();
+        }}
+    }})
+    .catch(err => console.log('Arka plan verisi çekilemedi:', err));
+}}, 20000);
 </script>
 
 </body>
