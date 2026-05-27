@@ -3,6 +3,9 @@ name: Update MCSR Leaderboard
 on:
   schedule:
     - cron: '*/35 * * * *'
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -32,11 +35,16 @@ jobs:
     - name: Run Python script
       run: python mcsr_filtre.py
 
-    - name: Commit and push if HTML changed
+    - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add index.html mcsr_liderlik_ilk100.txt || true
-        git commit -m "Auto-update leaderboard data" || true
+        
+        # Sistemi sürekli uyanık tutan hileli kısım
+        echo "Son tetiklenme saati: $(date)" > son_calisma.txt
+        git add son_calisma.txt
+        
+        git commit -m "Auto-update and trigger next cycle" || true
         git pull --rebase origin main || true
         git push origin main
